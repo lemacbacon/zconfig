@@ -27,9 +27,19 @@ EMPTY_VALUE=
 	}
 
 	// Change to temp directory to test default behavior
-	oldDir, _ := os.Getwd()
-	defer os.Chdir(oldDir)
-	os.Chdir(tmpDir)
+	oldDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Failed to get current directory: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(oldDir); err != nil {
+			t.Errorf("Failed to restore directory: %v", err)
+		}
+	}()
+	
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("Failed to change to temp directory: %v", err)
+	}
 
 	provider := NewDotenvProvider()
 
@@ -118,9 +128,7 @@ func TestDotenvProviderNonexistentFile(t *testing.T) {
 	}
 }
 
-func TestDotenvProviderFormatKey(t *testing.T) {
-	provider := NewDotenvProvider()
-
+func TestFormatEnvKey(t *testing.T) {
 	tests := []struct {
 		input    string
 		expected string
@@ -132,9 +140,9 @@ func TestDotenvProviderFormatKey(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		result := provider.FormatKey(test.input)
+		result := FormatEnvKey(test.input)
 		if result != test.expected {
-			t.Errorf("FormatKey(%s): expected %s, got %s", test.input, test.expected, result)
+			t.Errorf("FormatEnvKey(%s): expected %s, got %s", test.input, test.expected, result)
 		}
 	}
 }
@@ -152,5 +160,63 @@ func TestDotenvProviderName(t *testing.T) {
 	
 	if provider.Name() != "dotenv" {
 		t.Errorf("Expected name 'dotenv', got '%s'", provider.Name())
+	}
+}
+
+func TestDotenvProviderQuoteParsing(t *testing.T) {
+	// Create a temporary .env file with various quote scenarios
+	tmpDir := t.TempDir()
+	envFile := filepath.Join(tmpDir, "quotes.env")
+	
+	content := `SIMPLE=unquoted value
+DOUBLE_QUOTED="quoted value"
+SINGLE_QUOTED='single quoted'
+ESCAPED_QUOTES="value with \"escaped\" quotes"
+ESCAPED_BACKSLASH="value with \\ backslash"
+NEWLINE="line1\nline2"
+TAB="col1\tcol2"
+EMPTY_QUOTES=""
+MIXED_QUOTES="don't mix quotes"
+EQUALS_IN_VALUE=key=value=another`
+	
+	err := os.WriteFile(envFile, []byte(content), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test .env file: %v", err)
+	}
+
+	provider := NewDotenvProviderWithPath(envFile)
+
+	tests := []struct {
+		key      string
+		expected string
+		found    bool
+	}{
+		{"simple", "unquoted value", true},
+		{"double.quoted", "quoted value", true},
+		{"single.quoted", "single quoted", true},
+		{"escaped.quotes", `value with "escaped" quotes`, true},
+		{"escaped.backslash", `value with \ backslash`, true},
+		{"newline", "line1\nline2", true},
+		{"tab", "col1\tcol2", true},
+		{"empty.quotes", "", true},
+		{"mixed.quotes", "don't mix quotes", true},
+		{"equals.in.value", "key=value=another", true},
+	}
+
+	for _, test := range tests {
+		value, found, err := provider.Retrieve(test.key)
+		if err != nil {
+			t.Errorf("Unexpected error for key %s: %v", test.key, err)
+			continue
+		}
+
+		if found != test.found {
+			t.Errorf("For key %s: expected found=%v, got found=%v", test.key, test.found, found)
+			continue
+		}
+
+		if found && value != test.expected {
+			t.Errorf("For key %s: expected value=%q, got value=%q", test.key, test.expected, value)
+		}
 	}
 }

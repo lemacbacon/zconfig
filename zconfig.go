@@ -15,7 +15,9 @@ var (
 func init() {
 	// Check if a custom dotenv path is specified via --dotenv argument
 	if dotenvPath, found, _ := Args.Retrieve("dotenv"); found && dotenvPath != "" {
-		Dotenv = NewDotenvProviderWithPath(dotenvPath.(string))
+		if pathStr, ok := dotenvPath.(string); ok {
+			Dotenv = NewDotenvProviderWithPath(pathStr)
+		}
 	}
 	
 	DefaultRepository.AddProviders(Args, Env, Dotenv)

@@ -90,10 +90,16 @@ func (EnvProvider) Priority() int {
 	return 2
 }
 
-func (EnvProvider) FormatKey(key string) (env string) {
-	env = strings.ToUpper(key)
+// FormatEnvKey transforms configuration keys to environment variable format.
+// Examples: "database.url" -> "DATABASE_URL", "api-key" -> "API_KEY"
+func FormatEnvKey(key string) string {
+	env := strings.ToUpper(key)
 	env = strings.Replace(env, ".", "_", -1)
 	return strings.Replace(env, "-", "_", -1)
+}
+
+func (EnvProvider) FormatKey(key string) (env string) {
+	return FormatEnvKey(key)
 }
 
 // A Provider that implements the repository.Provider interface for dotenv files.
@@ -144,30 +150,52 @@ func (p *DotenvProvider) loadFile(path string) {
 		}
 
 		// Parse KEY=VALUE format
-		parts := strings.SplitN(line, "=", 2)
-		if len(parts) != 2 {
+		key, value, found := strings.Cut(line, "=")
+		if !found {
 			continue
 		}
 
-		key := strings.TrimSpace(parts[0])
-		value := strings.TrimSpace(parts[1])
+		key = strings.TrimSpace(key)
+		value = strings.TrimSpace(value)
 
-		// Remove surrounding quotes if present
-		if len(value) >= 2 {
-			if (value[0] == '"' && value[len(value)-1] == '"') ||
-				(value[0] == '\'' && value[len(value)-1] == '\'') {
-				value = value[1 : len(value)-1]
-			}
-		}
+		// Parse quoted values with basic unquoting
+		value = p.unquoteValue(value)
 
 		p.vars[key] = value
 	}
 }
 
+// unquoteValue removes surrounding quotes and handles basic escape sequences.
+// Note: This is a simplified implementation. For full shell-like quoting,
+// consider using strconv.Unquote or a more sophisticated parser.
+func (p *DotenvProvider) unquoteValue(value string) string {
+	if len(value) < 2 {
+		return value
+	}
+
+	// Handle double quotes
+	if value[0] == '"' && value[len(value)-1] == '"' {
+		inner := value[1 : len(value)-1]
+		// Basic escape sequence handling for double quotes
+		inner = strings.ReplaceAll(inner, `\"`, `"`)
+		inner = strings.ReplaceAll(inner, `\\`, `\`)
+		inner = strings.ReplaceAll(inner, `\n`, "\n")
+		inner = strings.ReplaceAll(inner, `\t`, "\t")
+		return inner
+	}
+
+	// Handle single quotes (no escape sequences in single quotes)
+	if value[0] == '\'' && value[len(value)-1] == '\'' {
+		return value[1 : len(value)-1]
+	}
+
+	return value
+}
+
 // Retrieve will return the value from the loaded dotenv variables.
 func (p *DotenvProvider) Retrieve(key string) (value interface{}, found bool, err error) {
 	// Use the same key formatting as EnvProvider for consistency
-	envKey := p.FormatKey(key)
+	envKey := FormatEnvKey(key)
 	value, found = p.vars[envKey]
 	return value, found, nil
 }
@@ -180,11 +208,4 @@ func (p *DotenvProvider) Name() string {
 // Priority of the provider. Set to 3 so it comes after args (1) and env (2).
 func (p *DotenvProvider) Priority() int {
 	return 3
-}
-
-// FormatKey formats the configuration key to match environment variable naming conventions.
-func (p *DotenvProvider) FormatKey(key string) string {
-	env := strings.ToUpper(key)
-	env = strings.Replace(env, ".", "_", -1)
-	return strings.Replace(env, "-", "_", -1)
 }
