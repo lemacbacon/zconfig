@@ -177,7 +177,10 @@ NEWLINE="line1\nline2"
 TAB="col1\tcol2"
 EMPTY_QUOTES=""
 MIXED_QUOTES="don't mix quotes"
-EQUALS_IN_VALUE=key=value=another`
+EQUALS_IN_VALUE=key=value=another
+NESTED_QUOTES="'foo'"
+REVERSE_NESTED='"bar"'
+CARRIAGE_RETURN="line1\rline2"`
 
 	err := os.WriteFile(envFile, []byte(content), 0644)
 	if err != nil {
@@ -201,6 +204,9 @@ EQUALS_IN_VALUE=key=value=another`
 		{"empty.quotes", "", true},
 		{"mixed.quotes", "don't mix quotes", true},
 		{"equals.in.value", "key=value=another", true},
+		{"nested.quotes", "'foo'", true},
+		{"reverse.nested", "\"bar\"", true},
+		{"carriage.return", "line1\rline2", true},
 	}
 
 	for _, test := range tests {

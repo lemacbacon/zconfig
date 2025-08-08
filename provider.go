@@ -174,18 +174,21 @@ func (p *DotenvProvider) unquoteValue(value string) string {
 	}
 
 	// Handle double quotes
-	if value[0] == '"' && value[len(value)-1] == '"' {
+	if strings.HasPrefix(value, `"`) && strings.HasSuffix(value, `"`) {
 		inner := value[1 : len(value)-1]
-		// Basic escape sequence handling for double quotes
-		inner = strings.ReplaceAll(inner, `\"`, `"`)
-		inner = strings.ReplaceAll(inner, `\\`, `\`)
-		inner = strings.ReplaceAll(inner, `\n`, "\n")
-		inner = strings.ReplaceAll(inner, `\t`, "\t")
-		return inner
+		// Use strings.Replacer for more efficient escape sequence handling
+		replacer := strings.NewReplacer(
+			`\"`, `"`,
+			`\\`, `\`,
+			`\n`, "\n",
+			`\t`, "\t",
+			`\r`, "\r",
+		)
+		return replacer.Replace(inner)
 	}
 
 	// Handle single quotes (no escape sequences in single quotes)
-	if value[0] == '\'' && value[len(value)-1] == '\'' {
+	if strings.HasPrefix(value, `'`) && strings.HasSuffix(value, `'`) {
 		return value[1 : len(value)-1]
 	}
 
