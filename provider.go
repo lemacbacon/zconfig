@@ -94,8 +94,8 @@ func (EnvProvider) Priority() int {
 // Examples: "database.url" -> "DATABASE_URL", "api-key" -> "API_KEY"
 func FormatEnvKey(key string) string {
 	env := strings.ToUpper(key)
-	env = strings.Replace(env, ".", "_", -1)
-	return strings.Replace(env, "-", "_", -1)
+	env = strings.ReplaceAll(env, ".", "_")
+	return strings.ReplaceAll(env, "-", "_")
 }
 
 func (EnvProvider) FormatKey(key string) (env string) {
@@ -138,7 +138,9 @@ func (p *DotenvProvider) loadFile(path string) {
 		// File doesn't exist or can't be opened, but that's okay
 		return
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
