@@ -19,7 +19,7 @@ func init() {
 			Dotenv = NewDotenvProviderWithPath(pathStr)
 		}
 	}
-	
+
 	DefaultRepository.AddProviders(Args, Env, Dotenv)
 	DefaultRepository.AddParsers(ParseString)
 	DefaultProcessor.AddHooks(DefaultRepository.Hook, Initialize)

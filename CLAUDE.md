@@ -17,11 +17,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `go mod tidy` - Clean up module dependencies
 - `goimports -w .` - Format code (required by project conventions)
 - `go vet ./...` - Static analysis
+- `golangci-lint run` - Run comprehensive linting (used by CI)
 
 ### Module Management
 
 - `go mod download` - Download dependencies
 - `go mod verify` - Verify dependencies
+
+### Continuous Integration
+
+The project uses GitHub Actions for CI/CD:
+
+- **Tests**: Run on Go 1.20-1.24 with race detection and coverage
+- **Linting**: golangci-lint with comprehensive rules
+- **Formatting**: goimports validation (must be properly formatted)
+- Runs on all PRs and pushes to master/main branches
 
 ## Architecture
 

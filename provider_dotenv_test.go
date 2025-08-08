@@ -10,7 +10,7 @@ func TestNewDotenvProvider(t *testing.T) {
 	// Create a temporary .env file
 	tmpDir := t.TempDir()
 	envFile := filepath.Join(tmpDir, ".env")
-	
+
 	content := `# This is a comment
 DATABASE_URL=postgres://localhost/test
 API_KEY="secret-key"
@@ -20,7 +20,7 @@ DEBUG=true
 PORT=8080
 EMPTY_VALUE=
 `
-	
+
 	err := os.WriteFile(envFile, []byte(content), 0644)
 	if err != nil {
 		t.Fatalf("Failed to create test .env file: %v", err)
@@ -36,7 +36,7 @@ EMPTY_VALUE=
 			t.Errorf("Failed to restore directory: %v", err)
 		}
 	}()
-	
+
 	if err := os.Chdir(tmpDir); err != nil {
 		t.Fatalf("Failed to change to temp directory: %v", err)
 	}
@@ -78,11 +78,11 @@ func TestNewDotenvProviderWithPath(t *testing.T) {
 	// Create a temporary .env file
 	tmpDir := t.TempDir()
 	envFile := filepath.Join(tmpDir, "custom.env")
-	
+
 	content := `CUSTOM_VAR=custom-value
 ANOTHER_VAR='quoted-value'
 `
-	
+
 	err := os.WriteFile(envFile, []byte(content), 0644)
 	if err != nil {
 		t.Fatalf("Failed to create test .env file: %v", err)
@@ -149,7 +149,7 @@ func TestFormatEnvKey(t *testing.T) {
 
 func TestDotenvProviderPriority(t *testing.T) {
 	provider := NewDotenvProvider()
-	
+
 	if provider.Priority() != 3 {
 		t.Errorf("Expected priority 3, got %d", provider.Priority())
 	}
@@ -157,7 +157,7 @@ func TestDotenvProviderPriority(t *testing.T) {
 
 func TestDotenvProviderName(t *testing.T) {
 	provider := NewDotenvProvider()
-	
+
 	if provider.Name() != "dotenv" {
 		t.Errorf("Expected name 'dotenv', got '%s'", provider.Name())
 	}
@@ -167,7 +167,7 @@ func TestDotenvProviderQuoteParsing(t *testing.T) {
 	// Create a temporary .env file with various quote scenarios
 	tmpDir := t.TempDir()
 	envFile := filepath.Join(tmpDir, "quotes.env")
-	
+
 	content := `SIMPLE=unquoted value
 DOUBLE_QUOTED="quoted value"
 SINGLE_QUOTED='single quoted'
@@ -178,7 +178,7 @@ TAB="col1\tcol2"
 EMPTY_QUOTES=""
 MIXED_QUOTES="don't mix quotes"
 EQUALS_IN_VALUE=key=value=another`
-	
+
 	err := os.WriteFile(envFile, []byte(content), 0644)
 	if err != nil {
 		t.Fatalf("Failed to create test .env file: %v", err)
